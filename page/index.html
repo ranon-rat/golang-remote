@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            ranon spyware
+        </title>
+        
+    </head>
+   
+    <body>
+
+        <p>
+            <img  src=""id="sc"/>
+        <p>
+        <script >
+
+            (function(){
+
+            console.dir(window.location.href+"image")
+            let time=setInterval(function() {
+                let url=window.location.href +"image/{"
+                let random = Math.ceil(Math.random()*100);
+                document.querySelector("#sc").src=`${url+random}}`
+                        
+            },500);
+
+            }
+            )();
+        </script>
+    </body>
+</html>
