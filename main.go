@@ -61,7 +61,7 @@ func readMouse(w http.ResponseWriter, r *http.Request) {
 func readCommand(w http.ResponseWriter, r *http.Request) {
 
 	req := bodyRequest(r)
-<<<<<<< HEAD
+
 	req = clearRequest(req)
 	req1 := strings.Split(req, ":")
 	command := strings.Split(req1[1], " ")
@@ -73,11 +73,11 @@ func readCommand(w http.ResponseWriter, r *http.Request) {
 	out, _ := cmd.Output()
 	fmt.Println(string(out))
 	fmt.Println()
-=======
+
 	j := json.NewDecoder(strings.NewReader(req))
 	j.Decode(&c)//idk why doest decode the request 
 	fmt.Println(c, req)
->>>>>>> af806f244376d16d1a3bf70d19fcbf72e48ab1e4
+
 
 }
 func sendI(w http.ResponseWriter, r *http.Request) {
