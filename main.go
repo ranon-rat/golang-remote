@@ -74,11 +74,6 @@ func readCommand(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(string(out))
 	fmt.Println()
 
-	j := json.NewDecoder(strings.NewReader(req))
-	j.Decode(&c)//idk why doest decode the request 
-	fmt.Println(c, req)
-
-
 }
 func sendI(w http.ResponseWriter, r *http.Request) {
 	n := screenshot.NumActiveDisplays()
