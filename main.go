@@ -2,11 +2,11 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"image/png"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -57,11 +57,19 @@ func readMouse(w http.ResponseWriter, r *http.Request) {
 	robotgo.MoveMouse(m["x"], m["y"])
 }
 func readCommand(w http.ResponseWriter, r *http.Request) {
-	var c com
+
 	req := bodyRequest(r)
-	j := json.NewDecoder(strings.NewReader(req))
-	j.Decode(&c)
-	fmt.Println(c, req)
+	req = clearRequest(req)
+	req1 := strings.Split(req, ":")
+	command := strings.Split(req1[1], " ")
+	cmd := exec.Command(command[0], command[1:]...)
+	fmt.Println(command)
+	if err := cmd.Run(); err != nil {
+		fmt.Println(err)
+	}
+	out, _ := cmd.Output()
+	fmt.Println(string(out))
+	fmt.Println()
 
 }
 func sendI(w http.ResponseWriter, r *http.Request) {
