@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"image"
 	"image/png"
 	"io/ioutil"
 	"net/http"
@@ -14,10 +15,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/kbinani/screenshot"
 )
-
-type com struct {
-	com string
-}
 
 func clearRequest(str string) string {
 	str = strings.Replace(str, "{", "", -1)
@@ -40,7 +37,6 @@ func madeMapMouse(str string) map[string]int {
 	}
 	return m
 }
-
 func bodyRequest(r *http.Request) string {
 	body, _ := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -66,23 +62,37 @@ func readCommand(w http.ResponseWriter, r *http.Request) {
 	req1 := strings.Split(req, ":")
 	command := strings.Split(req1[1], " ")
 	cmd := exec.Command(command[0], command[1:]...)
-	fmt.Println(command)
-	if err := cmd.Run(); err != nil {
-		fmt.Println(err)
-	}
-	out, _ := cmd.Output()
+	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
-	fmt.Println()
+	cmd.Run()
 
 }
+func compress(img image.Image) image.Image {
+	var division float64 = 1.2
+	width := int(float64(img.Bounds().Max.X) / division)
+	height := int(float64(img.Bounds().Max.Y) / division)
+	upLeft := image.Point{0, 0}
+	lowRight := image.Point{width, height}
+	img2 := image.NewRGBA(image.Rectangle{upLeft, lowRight})
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			img2.Set(x, y, img.At(int(float64(x)*division), int(float64(y)*division)))
+		}
+	}
+	return img2
+}
 func sendI(w http.ResponseWriter, r *http.Request) {
+
 	n := screenshot.NumActiveDisplays()
+
 	//this only take screenshots and send to the page
 	for i := 0; i < n; i++ {
+
 		bounds := screenshot.GetDisplayBounds(i)
+
 		img, _ := screenshot.CaptureRect(bounds)
 		buffer := new(bytes.Buffer)
-		png.Encode(buffer, img)
+		png.Encode(buffer, compress(img))
 		//image encode the image and send the image
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
