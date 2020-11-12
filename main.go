@@ -69,13 +69,11 @@ func readCommand(w http.ResponseWriter, r *http.Request) {
 }
 func compress(img image.Image) image.Image {
 	var division float64 = 1.2
-	width := int(float64(img.Bounds().Max.X) / division)
-	height := int(float64(img.Bounds().Max.Y) / division)
 	upLeft := image.Point{0, 0}
-	lowRight := image.Point{width, height}
+	lowRight := image.Point{int(float64(img.Bounds().Max.X) / division), int(float64(img.Bounds().Max.Y) / division)}
 	img2 := image.NewRGBA(image.Rectangle{upLeft, lowRight})
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
+	for x := 0; x < int(float64(img.Bounds().Max.X)/division); x++ {
+		for y := 0; y < int(float64(img.Bounds().Max.Y)/division); y++ {
 			img2.Set(x, y, img.At(int(float64(x)*division), int(float64(y)*division)))
 		}
 	}
