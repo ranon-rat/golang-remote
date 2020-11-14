@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"image"
 	"image/png"
 	"io/ioutil"
@@ -73,7 +72,6 @@ func readMouse(w http.ResponseWriter, r *http.Request) {
 	if mo.Click.Click {
 		robotgo.MouseClick(mo.Click.Side, mo.Click.Click)
 	}
-
 }
 func readCommand(w http.ResponseWriter, r *http.Request) {
 	mo := new(command)
@@ -92,32 +90,6 @@ func typeSomething(w http.ResponseWriter, r *http.Request) {
 }
 
 //--------------------->  this is for get the image of the screen and send it
-
-func readCommand(w http.ResponseWriter, r *http.Request) {
-
-	req := bodyRequest(r)
-
-	req = clearRequest(req)
-	req1 := strings.Split(req, ":")
-	command := strings.Split(req1[1], " ")
-	cmd := exec.Command(command[0], command[1:]...)
-	out, _ := cmd.CombinedOutput()
-	fmt.Println(string(out))
-	cmd.Run()
-
-}
-func compress(img image.Image) image.Image {
-	var division float64 = 1.2
-	upLeft := image.Point{0, 0}
-	lowRight := image.Point{int(float64(img.Bounds().Max.X) / division), int(float64(img.Bounds().Max.Y) / division)}
-	img2 := image.NewRGBA(image.Rectangle{upLeft, lowRight})
-	for x := 0; x < int(float64(img.Bounds().Max.X)/division); x++ {
-		for y := 0; y < int(float64(img.Bounds().Max.Y)/division); y++ {
-			img2.Set(x, y, img.At(int(float64(x)*division), int(float64(y)*division)))
-		}
-	}
-	return img2
-}
 
 func sendI(w http.ResponseWriter, r *http.Request) {
 
