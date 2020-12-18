@@ -4,5 +4,7 @@ Rysty help me in the develop of this project and here is his github [rustyBalboa
 <h3>you need to open the por 8090 </h3>
 <h3> maybe you can use ngrok but for the request is dont the best practice </h3>
 <h3>if you find a form to optimize this i will be thankful</h3>
-
+<h4>
+In the future this project is gona work with sockets
+</h4>
 
