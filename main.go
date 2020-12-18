@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/png"
 	"io/ioutil"
@@ -32,14 +33,6 @@ type text struct {
 	Text string `json:"word"`
 }
 
-func clearRequest(str string) string {
-	str = strings.Replace(str, "{", "", -1)
-	str = strings.Replace(str, "}", "", -1)
-	str = strings.Replace(str, "\"", "", -1)
-	return str
-
-}
-
 //---------------------> this was the tools for decode or compress
 func compress(img image.Image) image.Image {
 	var division float64 = 1.2
@@ -53,6 +46,8 @@ func compress(img image.Image) image.Image {
 	}
 	return img2
 }
+
+//-------------------> this decode the body request into a string
 func bodyRequest(r *http.Request) string {
 	body, _ := ioutil.ReadAll(r.Body)
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
@@ -114,11 +109,19 @@ func sendI(w http.ResponseWriter, r *http.Request) {
 //--------------------->  the main
 func main() {
 	r := mux.NewRouter()
-	fs := http.Dir("page/")
-	r.Handle("/", http.FileServer(fs))
+	//static
+	r.Handle("/", http.FileServer(http.Dir("view/")))
+	r.HandleFunc("/src/{file}", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.URL.Path[1:])
+		http.ServeFile(w, r, r.URL.Path[1:])
+
+	})
+	//routes
 	r.HandleFunc("/image/{a}", sendI)
 	r.HandleFunc("/mouse", readMouse)
 	r.HandleFunc("/typetext", typeSomething)
 	r.HandleFunc("/command", readCommand)
+	//server
+
 	http.ListenAndServe(":8090", r)
 }
