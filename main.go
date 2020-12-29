@@ -2,20 +2,26 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"image"
 	"image/png"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/go-vgo/robotgo"
-	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/kbinani/screenshot"
 )
+
+var upgrade = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 type mouse struct {
 	X     int             `json:"x"`
@@ -39,6 +45,7 @@ func compress(img image.Image) image.Image {
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{int(float64(img.Bounds().Max.X) / division), int(float64(img.Bounds().Max.Y) / division)}
 	img2 := image.NewRGBA(image.Rectangle{upLeft, lowRight})
+
 	for x := 0; x < int(float64(img.Bounds().Max.X)/division); x++ {
 		for y := 0; y < int(float64(img.Bounds().Max.Y)/division); y++ {
 			img2.Set(x, y, img.At(int(float64(x)*division), int(float64(y)*division)))
@@ -87,41 +94,98 @@ func typeSomething(w http.ResponseWriter, r *http.Request) {
 //--------------------->  this is for get the image of the screen and send it
 
 func sendI(w http.ResponseWriter, r *http.Request) {
-
-	n := screenshot.NumActiveDisplays()
-
-	//this only take screenshots and send to the page
-	for i := 0; i < n; i++ {
-
-		bounds := screenshot.GetDisplayBounds(i)
-
-		img, _ := screenshot.CaptureRect(bounds)
-		buffer := new(bytes.Buffer)
-		png.Encode(buffer, compress(img))
-		//image encode the image and send the image
-		w.Header().Set("Content-Type", "image/jpeg")
-		w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
-		//image
-		w.Write(buffer.Bytes())
+	fmt.Println("request")
+	upgrade.CheckOrigin = func(r *http.Request) bool { return true }
+	ws, err := upgrade.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
 	}
+	imageWebSocket(ws)
+
+}
+func reader(conn *websocket.Conn) {
+	for {
+		messageType, _, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("fuck")
+			return
+		}
+		n := screenshot.NumActiveDisplays()
+		for {
+			for i := 0; i < n; i++ {
+
+				bounds := screenshot.GetDisplayBounds(i)
+
+				img, _ := screenshot.CaptureRect(bounds)
+				buffer := new(bytes.Buffer)
+				png.Encode(buffer, compress(img))
+				encoded := base64.StdEncoding.EncodeToString(buffer.Bytes())
+
+				//image encode the image and send the image
+				if err := conn.WriteMessage(messageType, []byte(encoded)); err != nil {
+					log.Println(err)
+				}
+
+			}
+		}
+	}
+}
+
+func wsEndpoint(w http.ResponseWriter, r *http.Request) {
+	upgrade.CheckOrigin = func(r *http.Request) bool { return true }
+	ws, err := upgrade.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("se ha conectado , por fin carajo >:(")
+	reader(ws)
+}
+func imageWebSocket(ws *websocket.Conn) {
+
+	for {
+		messageType, p, err := ws.ReadMessage()
+		if err != nil {
+			log.Println("fuck")
+			return
+		}
+		log.Println(string(p), messageType)
+
+		n := screenshot.NumActiveDisplays()
+
+		for i := 0; i < n; i++ {
+
+			bounds := screenshot.GetDisplayBounds(i)
+
+			img, _ := screenshot.CaptureRect(bounds)
+			// decode the image into a base64
+			buffer := new(bytes.Buffer)
+			png.Encode(buffer, compress(img))
+			encoded := base64.StdEncoding.EncodeToString(buffer.Bytes())
+
+			//image encode the image and send the image
+			if err := ws.WriteMessage(messageType, []byte(encoded)); err != nil {
+				log.Println(err)
+			}
+
+		}
+	}
+}
+func setupRoutes() {
+
+	http.Handle("/", http.FileServer(http.Dir("view/")))
+
+	//routes
+	http.HandleFunc("/ws", wsEndpoint)
+	http.HandleFunc("/mouse", readMouse)
+	http.HandleFunc("/typetext", typeSomething)
+	http.HandleFunc("/command", readCommand)
+
 }
 
 //--------------------->  the main
 func main() {
-	r := mux.NewRouter()
-	//static
-	r.Handle("/", http.FileServer(http.Dir("view/")))
-	r.HandleFunc("/src/{file}", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.URL.Path[1:])
-		http.ServeFile(w, r, r.URL.Path[1:])
 
-	})
-	//routes
-	r.HandleFunc("/image/{a}", sendI)
-	r.HandleFunc("/mouse", readMouse)
-	r.HandleFunc("/typetext", typeSomething)
-	r.HandleFunc("/command", readCommand)
-	//server
+	setupRoutes()
 
-	http.ListenAndServe(":8090", r)
+	http.ListenAndServe(":8090", nil)
 }

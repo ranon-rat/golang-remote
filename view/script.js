@@ -1,3 +1,24 @@
+let socket = new WebSocket("ws://" + window.location.host + "/ws");
+console.log("Attempting Connection...");
+
+socket.onopen = () => {
+  console.log("Successfully Connected");
+
+  socket.send("Hi From the Client!");
+};
+socket.onmessage = function (evt) {
+  document.querySelector("#sc").src = "data:image/png;base64," + evt.data;
+  //data:image/png;base64,
+};
+
+socket.onclose = (event) => {
+  console.log("Socket Closed Connection: ", event);
+  socket.send("Client Closed!");
+};
+
+socket.onerror = (error) => {
+  console.log("Socket Error: ", error);
+};
 var global = {
   x: undefined,
   y: undefined,
@@ -42,9 +63,6 @@ function mouse_position() {
   global.y = Math.floor((e.clientY / img.height) * screen.height);
 }
 let time = setInterval(function () {
-  let url = window.location.href + "image/{",
-    random = Math.random();
-  document.querySelector("#sc").src = `${url + random}}`;
   //--------------------->  this send the mouse position
   fetch(window.location.href + "mouse", {
     method: "POST",
